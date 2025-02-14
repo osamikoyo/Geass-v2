@@ -9,7 +9,8 @@ import (
 
 type Config struct {
 	AmqpConnectUrl string `yaml:"amqp_connect_url"`
-	Deep uint8 `yaml:"deep"`
+	StartUrl string `yaml:"start_url"`
+	Deep int `yaml:"deep"`
 	LogsDir string `yaml:"logs_dir"`
 }
 

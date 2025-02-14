@@ -3,6 +3,10 @@ package parsers
 import (
 	"fmt"
 	"github.com/osamikoyo/geass-v2/internal/models"
+	"github.com/osamikoyo/geass-v2/internal/sender"
+	"github.com/osamikoyo/geass-v2/internal/utils"
+	"github.com/osamikoyo/geass-v2/pkg/config"
+	"github.com/osamikoyo/geass-v2/pkg/loger"
 	"log"
 	"net/http"
 	"strings"
@@ -12,7 +16,20 @@ import (
 )
 
 type Parser struct {
+	Sender *sender.Sender
+	Logger loger.Logger
+}
+
+func New(cfg *config.Config) (*Parser, error) {
+	sender, err := sender.New(cfg)
+	if err != nil{
+		return nil, err
+	}
 	
+	return &Parser{
+		Sender: sender,
+		Logger: loger.New(cfg.LogsDir),
+	}, nil
 }
 
 // Глобальные переменные
@@ -128,9 +145,11 @@ func extractContent(url string) (models.PageInfo, error) {
 	}
 	f(doc)
 
+	pageInfo.Content.FullText = utils.Clear(pageInfo.Content.FullText)
+
 	return pageInfo, nil
 }
-func ParsePage(url string, depth int) {
+func (p *Parser)ParsePage(url string, depth int) {
 	defer wg.Done()
 
 	mu.Lock()
@@ -143,12 +162,10 @@ func ParsePage(url string, depth int) {
 
 	pageInfo, err := extractContent(url)
 	if err != nil {
-		log.Printf("Error extracting content from %s: %v\n", url, err)
+		p.Logger.Error().Str("url", url).Err(err)
 		return
 	}
-
-	fmt.Printf("URL: %s\nTitle: %s\nDescription: %s\nContent: %s\n\n",
-		pageInfo.Url, pageInfo.Title, pageInfo.MetadataDescription, pageInfo.Content.FullText)
+	err = p.Sender.Send(pageInfo)
 
 	links, err := extractLinks(url)
 	if err != nil {
@@ -158,6 +175,6 @@ func ParsePage(url string, depth int) {
 
 	for _, link := range links {
 		wg.Add(1)
-		go ParsePage(link.Href, depth+1)
+		go p.ParsePage(link.Href, depth)
 	}
 }

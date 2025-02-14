@@ -1,0 +1,4 @@
+amqp_connect_url : "amqp://localhost:5672"
+deep : 2
+start_url : "https://ru.wikipedia.org/wiki/Motion_blur"
+logs_dir : "logs"
