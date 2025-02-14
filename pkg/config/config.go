@@ -1,5 +1,12 @@
 package config
 
+import (
+    "fmt"
+    "gopkg.in/yaml.v3"
+    "io"
+    "os"
+)
+
 type Config struct {
 	AmqpConnectUrl string `yaml:"amqp_connect_url"`
 	Deep uint8 `yaml:"deep"`
@@ -7,5 +14,27 @@ type Config struct {
 }
 
 func Load(path string) (Config, error) {
+	defconf := Config{
+		AmqpConnectUrl: "amqp://localhost:5672",
+		Deep: 3,
+		LogsDir: "logs",
+	}
+
+	file, err := os.Open(path)
+	if err != nil{
+		return defconf, fmt.Errorf("cant open config file: %w", err)
+	}
+
+	body, err := io.ReadAll(file)
+	if err != nil{
+		return defconf, fmt.Errorf("can not to read config: %w", err)
+	}
+
+	var cfg Config
 	
+	if err = yaml.Unmarshal(body, &cfg);err != nil{
+		return defconf, fmt.Errorf("can not unmarshal bytes: %w", err)
+	}
+
+	return cfg, nil
 }
