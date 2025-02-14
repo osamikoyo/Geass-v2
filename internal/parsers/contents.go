@@ -2,6 +2,7 @@ package parsers
 
 import (
 	"fmt"
+	"github.com/osamikoyo/geass-v2/internal/models"
 	"log"
 	"net/http"
 	"strings"
@@ -14,42 +15,6 @@ type Parser struct {
 	
 }
 
-type Image struct {
-	Src string
-	Alt string
-}
-
-type Link struct {
-	Text string
-	Href string
-}
-
-type Content struct {
-	FullText string
-	Images   []Image
-}
-
-type Technical struct {
-	Code        uint32
-	ContentType string
-}
-
-type Metadata struct {
-	Lang   string
-	Robots string
-}
-
-type PageInfo struct {
-	Url               string
-	Title            string
-	MetadataDescription string
-	Content             Content
-	CountKeyWord        uint64
-	Links               []Link
-	Technical           Technical
-	Metadata            Metadata
-}
-
 // Глобальные переменные
 var (
 	maxDepth    = 3
@@ -58,7 +23,7 @@ var (
 	wg          sync.WaitGroup
 )
 
-func extractLinks(url string) ([]Link, error) {
+func extractLinks(url string) ([]models.Link, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -70,14 +35,14 @@ func extractLinks(url string) ([]Link, error) {
 		return nil, err
 	}
 
-	var links []Link
+	var links []models.Link
 	var f func(*html.Node)
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "a" {
 			for _, attr := range n.Attr {
 				if attr.Key == "href" {
 					text := strings.TrimSpace(getText(n))
-					links = append(links, Link{Text: text, Href: attr.Val})
+					links = append(links, models.Link{Text: text, Href: attr.Val})
 					break
 				}
 			}
@@ -102,19 +67,19 @@ func getText(n *html.Node) string {
 	return text
 }
 
-func extractContent(url string) (PageInfo, error) {
+func extractContent(url string) (models.PageInfo, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return PageInfo{}, err
+		return models.PageInfo{}, err
 	}
 	defer resp.Body.Close()
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		return PageInfo{}, err
+		return models.PageInfo{}, err
 	}
 
-	var pageInfo PageInfo
+	var pageInfo models.PageInfo
 	pageInfo.Url = url
 	pageInfo.Technical.Code = uint32(resp.StatusCode)
 	pageInfo.Technical.ContentType = resp.Header.Get("Content-Type")
@@ -151,7 +116,7 @@ func extractContent(url string) (PageInfo, error) {
 						alt = attr.Val
 					}
 				}
-				pageInfo.Content.Images = append(pageInfo.Content.Images, Image{Src: src, Alt: alt})
+				pageInfo.Content.Images = append(pageInfo.Content.Images, models.Image{Src: src, Alt: alt})
 			}
 		}
 		if n.Type == html.TextNode {
