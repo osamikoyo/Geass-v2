@@ -9,6 +9,11 @@ import (
 
 	"golang.org/x/net/html"
 )
+
+type Parser struct {
+	
+}
+
 type Image struct {
 	Src string
 	Alt string
@@ -38,11 +43,11 @@ type PageInfo struct {
 	Url               string
 	Title            string
 	MetadataDescription string
-	Content          Content
-	CountKeyWord     uint64
-	Links            []Link
-	Technical        Technical
-	Metadata         Metadata
+	Content             Content
+	CountKeyWord        uint64
+	Links               []Link
+	Technical           Technical
+	Metadata            Metadata
 }
 
 // Глобальные переменные
@@ -160,7 +165,7 @@ func extractContent(url string) (PageInfo, error) {
 
 	return pageInfo, nil
 }
-func parsePage(url string, depth int) {
+func ParsePage(url string, depth int) {
 	defer wg.Done()
 
 	mu.Lock()
@@ -188,6 +193,6 @@ func parsePage(url string, depth int) {
 
 	for _, link := range links {
 		wg.Add(1)
-		go parsePage(link.Href, depth+1)
+		go ParsePage(link.Href, depth+1)
 	}
 }
